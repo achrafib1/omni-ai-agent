@@ -1,8 +1,8 @@
 -- scripts/db/001_enable_extensions.sql
 /*
   Omni-Agent Database Extensions Initialization.
-  
-  Since we use SQLAlchemy and Alembic for table creation, this script ONLY 
+
+  Since we use SQLAlchemy and Alembic for table creation, this script ONLY
   contains the necessary database-level extensions that the ORM cannot create.
 */
 

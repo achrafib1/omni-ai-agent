@@ -1,13 +1,12 @@
 """
 Core Logging Module for Omni-AI-Agent.
 
-This module provides an enterprise-grade, highly elegant logging setup 
-utilizing the 'rich' library. It ensures consistent, color-coded, and 
+This module provides an enterprise-grade, highly elegant logging setup
+utilizing the 'rich' library. It ensures consistent, color-coded, and
 highly informative logs across the Gateway, LangGraph Agent, and MCP Server.
 """
 
 import logging
-import sys
 from typing import Optional
 
 from rich.console import Console
@@ -42,7 +41,7 @@ def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
 
     Returns:
         logging.Logger: A configured standard library Logger instance.
-    
+
     Example:
         >>> logger = setup_logger(__name__)
         >>> logger.info("Omni-Agent successfully initialized.")
@@ -66,13 +65,13 @@ def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
         tracebacks_show_locals=True,
     )
 
-    # Define the log message format. 
+    # Define the log message format.
     # We omit the time and path here because RichHandler displays them natively in columns.
     formatter = logging.Formatter("%(message)s")
     rich_handler.setFormatter(formatter)
 
     logger.addHandler(rich_handler)
-    
+
     # Prevent log messages from propagating to the root logger to avoid duplicates
     logger.propagate = False
 
@@ -81,8 +80,8 @@ def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
 
 def get_logger(name: Optional[str] = None) -> logging.Logger:
     """
-    Retrieves the configured logger. 
-    
+    Retrieves the configured logger.
+
     If it is not configured yet, it applies the default setup.
 
     Args:
@@ -92,4 +91,8 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
         logging.Logger: The configured logger.
     """
     logger_name = name or "omni_agent"
-    return logging.getLogger(logger_name) if logging.getLogger(logger_name).hasHandlers() else setup_logger(logger_name)
+    return (
+        logging.getLogger(logger_name)
+        if logging.getLogger(logger_name).hasHandlers()
+        else setup_logger(logger_name)
+    )

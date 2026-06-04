@@ -7,8 +7,11 @@ endpoints to manage the lifecycle of database sessions per request.
 """
 
 from typing import AsyncGenerator
+
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from shared.config import settings
 from shared.infrastructure.db.session import AsyncSessionLocal
 from shared.infrastructure.observability.logger import get_logger
 
@@ -20,23 +23,40 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency function to provide and manage an asynchronous database session.
 
-    This function is designed for use with FastAPI's `Depends` system. It creates
-    a new `AsyncSession` for each request, yields it to the endpoint, and
-    guarantees that the session is closed afterward, even if errors occur.
+    Designed for use with FastAPI's `Depends` injection system. It guarantees
+    that a new `AsyncSession` is yielded per request and safely closed afterward.
+    If a database error occurs mid-request, it intercepts it, rolls back the
+    transaction to prevent locks, and raises a secure exception.
 
     Yields:
-        AsyncSession: An asynchronous SQLAlchemy session ready for use in a request.
+        AsyncSession: An asynchronous SQLAlchemy session ready for use.
     """
     session: AsyncSession = AsyncSessionLocal()
     try:
-        logger.debug("Database session opened for request.")
+        if settings.ENABLE_DEBUG_LOGS:
+            logger.debug("Database session opened for incoming request.")
+
         yield session
-    except Exception as e:
+
+    except SQLAlchemyError as db_err:
+        # We catch SQLAlchemy specific errors to rollback and log safely.
+        # We avoid logging the raw query string which might contain user PII.
         logger.error(
-            f"[danger]Database session error during request:[/danger] {str(e)}"
+            "[danger]Database transaction failed during request. Rolling back session.[/danger]"
+        )
+        await session.rollback()
+        raise RuntimeError("A database transaction error occurred.") from db_err
+
+    except Exception:
+        # Catch any other unexpected python errors
+        logger.error(
+            "[danger]Unexpected error during database session lifecycle. Rolling back.[/danger]"
         )
         await session.rollback()
         raise
+
     finally:
-        logger.debug("Database session for request closed.")
+        if settings.ENABLE_DEBUG_LOGS:
+            logger.debug("Database session for request closed.")
+
         await session.close()

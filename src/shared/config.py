@@ -8,7 +8,8 @@ It ensures critical settings are present, correctly typed, and that secrets
 are protected from accidental logging using Pydantic's `SecretStr`.
 """
 
-from typing import List, Any
+from typing import Any, List
+
 from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,15 +30,20 @@ class Settings(BaseSettings):
     """
 
     # --- APPLICATION DEFAULTS ---
-    APP_NAME: str = Field(
-        "Omni-AI-Agent", description="The public-facing name of the application."
-    )
+    APP_NAME: str = Field("Omni-AI-Agent", description="The public-facing name of the application.")
     ENABLE_DEBUG_LOGS: bool = Field(
         False, description="Flag to enable verbose DEBUG level logging."
     )
     CORS_ORIGINS: List[str] = Field(
         ["http://localhost:3000", "http://127.0.0.1:3000"],
         description="List of allowed origins for Cross-Origin Resource Sharing (CORS).",
+    )
+
+    # The isolated PostgreSQL schema namespace.
+    # Defaults to 'omni' to prevent collisions on shared free-tier DBs.
+    DB_SCHEMA: str = Field(
+        "omni",
+        description="The isolated PostgreSQL schema namespace for this application.",
     )
 
     # --- AI MODELS ---
@@ -56,9 +62,7 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: SecretStr = Field(
         SecretStr(""), description="ElevenLabs API key for Text-to-Speech."
     )
-    ELEVENLABS_VOICE_ID: str = Field(
-        "", description="Default ElevenLabs Voice ID for the agent."
-    )
+    ELEVENLABS_VOICE_ID: str = Field("", description="Default ElevenLabs Voice ID for the agent.")
 
     # --- DATABASE & MEMORY (Supabase) ---
     SUPABASE_URL: str = Field("", description="The URL of the Supabase project.")
@@ -107,9 +111,7 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",")]
         if isinstance(v, list):
             return v
-        raise ValueError(
-            "Invalid format for CORS_ORIGINS. Expected list or comma-separated string."
-        )
+        raise ValueError("Invalid format for CORS_ORIGINS.")
 
     # Model config strictly maps to the .env file and ignores unused variables
     model_config = SettingsConfigDict(
@@ -124,16 +126,8 @@ class Settings(BaseSettings):
         Initializes the Settings instance and explicitly logs its loading status.
         """
         super().__init__(*args, **kwargs)
-        logger.info(
-            f"[success]Application settings loaded for: {self.APP_NAME}[/success]"
-        )
-        if self.ENABLE_DEBUG_LOGS:
-            logger.debug(
-                "[warning]Debug logging is enabled. Proceed with caution in production.[/warning]"
-            )
+        logger.info(f"[success]Application settings loaded for: {self.APP_NAME}[/success]")
 
 
-# Instantiate the singleton settings object to be imported across the app.
-# Note: To use a secret, you MUST call `.get_secret_value()`.
-# Example: api_key = settings.GROQ_API_KEY.get_secret_value()
+# Create the singleton settings object
 settings = Settings()
