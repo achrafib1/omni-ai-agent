@@ -2,19 +2,21 @@
 """
 Defines the declarative base for all SQLAlchemy ORM models.
 
-This module's single responsibility is to create and expose the `Base`
-object. All ORM models in the application will inherit from this `Base`,
-allowing them to be collected into a single metadata registry that Alembic
-can use to detect schema changes. Separating this into its own file
-prevents circular import issues with models.
+This module creates the `Base` object bound to our isolated database schema
+(loaded dynamically from config settings). Because the Alembic environment
+now utilizes a dynamic module scanner, this file no longer needs to import
+individual domain models, completely eliminating circular dependency risks.
 """
 
+from sqlalchemy import MetaData
 from sqlalchemy.orm import declarative_base
 
-# The declarative base that all ORM models will inherit from.
-Base = declarative_base()
+# Import our centralized settings to fetch the schema namespace dynamically
+from shared.config import settings
 
-# Note: In Phase 1, we will import our models here so Alembic can discover them.
-# Example:
-# from shared.domain.models.user import User
-# from shared.domain.models.memory import Memory
+# Bind metadata explicitly to our schema for clean Postgres-level isolation
+# This ensures that all tables inherit the 'omni' (or custom) schema automatically.
+metadata = MetaData(schema=settings.DB_SCHEMA)
+
+# The declarative base that all ORM models will inherit from.
+Base = declarative_base(metadata=metadata)

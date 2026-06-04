@@ -9,6 +9,7 @@ workspace and project.
 """
 
 import opik
+
 from shared.config import settings
 from shared.infrastructure.observability.logger import get_logger
 
