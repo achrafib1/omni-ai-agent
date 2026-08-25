@@ -1,0 +1,194 @@
+<!-- test_client.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni-AI-Agent Pro Tester</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #fff; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background-color: #2d2d2d; border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; color: #58a6ff; font-size: 1.2rem; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        label { display: block; margin-top: 10px; font-size: 0.9rem; color: #aaa; }
+        input[type="text"] { width: 100%; padding: 8px; margin-top: 5px; background-color: #3c3c3c; border: 1px solid #555; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #238636; color: #fff; border: none; padding: 10px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:hover { background-color: #2ea043; }
+        .log-box { background-color: #0d1117; border: 1px solid #30363d; height: 300px; overflow-y: auto; margin-top: 15px; padding: 10px; font-family: Consolas, monospace; font-size: 0.85rem; border-radius: 4px; white-space: pre-wrap; }
+        .success { color: #3fb950; }
+        .error { color: #f85149; }
+        .system { color: #8b949e; }
+        .token { color: #c9d1d9; }
+    </style>
+</head>
+<body>
+
+<h1 style="text-align: center; color: #fff;">Omni-AI-Agent Test Dashboard</h1>
+
+<div class="container">
+    <!-- PANEL 1: HTTP WEBHOOK SIMULATOR -->
+    <div class="panel">
+        <h2>1. HTTP Webhook (Sync)</h2>
+        <p style="font-size: 0.85rem; color: #8b949e;">Simulates Discord sending us a webhook. To see the bot reply in Discord, you must provide a real Channel ID.</p>
+        
+        <label>Real Discord Channel ID:</label>
+        <input type="text" id="httpChannelId" value="1234567890">
+        
+        <label>User ID (Fake is fine):</label>
+        <input type="text" id="httpUserId" value="test_user_1">
+        
+        <label>Message to Agent:</label>
+        <input type="text" id="httpMessage" value="Hello Omni, what are you doing?">
+        
+        <button onclick="sendHttpWebhook()">Send HTTP Webhook</button>
+        
+        <div class="log-box" id="httpLogs"></div>
+    </div>
+
+    <!-- PANEL 2: WEBSOCKET STREAMING -->
+    <div class="panel">
+        <h2>2. WebSocket Stream (Real-Time)</h2>
+        <p style="font-size: 0.85rem; color: #8b949e;">Connects directly to the streaming socket. No Discord setup required. Tokens stream here instantly.</p>
+        
+        <button onclick="connectWebSocket()" id="wsConnectBtn" style="background-color: #1f6feb;">Connect WebSocket</button>
+        
+        <div id="wsControls" style="display: none;">
+            <label>Session ID (Fake is fine):</label>
+            <input type="text" id="wsSessionId" value="ws_test_session_1">
+            
+            <label>Message to Agent:</label>
+            <input type="text" id="wsMessage" value="Explain quantum computing in 3 sentences.">
+            
+            <button onclick="sendWsMessage()">Stream to Agent</button>
+        </div>
+        
+        <div class="log-box" id="wsLogs"></div>
+    </div>
+</div>
+
+<script>
+    // --- HTTP WEBHOOK LOGIC ---
+    function logHttp(msg, type="system") {
+        const logs = document.getElementById('httpLogs');
+        logs.innerHTML += `<span class="${type}">${msg}</span>\n`;
+        logs.scrollTop = logs.scrollHeight;
+    }
+
+    async function sendHttpWebhook() {
+        const channelId = document.getElementById('httpChannelId').value;
+        const userId = document.getElementById('httpUserId').value;
+        const content = document.getElementById('httpMessage').value;
+        
+        logHttp(`[Request] Sending POST to /api/v1/discord/webhook...`, 'system');
+        
+        const payload = {
+            "channel_id": channelId,
+            "author": {"id": userId, "bot": false},
+            "content": content
+        };
+
+        try {
+            const response = await fetch('http://localhost:8000/api/v1/discord/webhook', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            logHttp(`[Response] ${JSON.stringify(data)}`, 'success');
+            logHttp(`Check your FastAPI terminal logs to see LangGraph executing!`, 'system');
+            logHttp(`If you used a real Channel ID, check your Discord server for the reply.`, 'system');
+        } catch (error) {
+            logHttp(`[Error] ${error.message}. Is your FastAPI server running?`, 'error');
+        }
+    }
+
+    // --- WEBSOCKET LOGIC ---
+    let ws = null;
+    let currentStreamSpan = null;
+
+    function logWs(msg, type="system", inline=false) {
+        const logs = document.getElementById('wsLogs');
+        if (inline && currentStreamSpan) {
+            currentStreamSpan.innerHTML += msg;
+        } else {
+            const span = document.createElement('span');
+            span.className = type;
+            span.innerHTML = msg + (inline ? "" : "\n");
+            logs.appendChild(span);
+            if (inline) currentStreamSpan = span;
+        }
+        logs.scrollTop = logs.scrollHeight;
+    }
+
+    function connectWebSocket() {
+        if (ws) {
+            ws.close();
+            return;
+        }
+        
+        logWs(`[Connecting] ws://localhost:8000/api/v1/discord/stream...`, 'system');
+        ws = new WebSocket('ws://localhost:8000/api/v1/discord/stream');
+        
+        ws.onopen = () => {
+            logWs(`[Connected] Socket opened successfully.`, 'success');
+            document.getElementById('wsConnectBtn').innerText = "Disconnect";
+            document.getElementById('wsConnectBtn').style.backgroundColor = "#da3633";
+            document.getElementById('wsControls').style.display = "block";
+        };
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === "status" || data.type === "handshake") {
+                logWs(`[Server]: ${data.message || data.content}`, 'system');
+            } 
+            else if (data.type === "token") {
+                if (data.is_final) {
+                    logWs(`\n[Stream Finished]`, 'success');
+                    currentStreamSpan = null;
+                } else {
+                    // Start a new line for a new message if needed
+                    if (!currentStreamSpan) logWs(`[Agent]: `, 'token', true);
+                    logWs(data.content, 'token', true);
+                }
+            }
+            else if (data.type === "error") {
+                logWs(`\n[Error]: ${data.message || data.content}`, 'error');
+                currentStreamSpan = null;
+            }
+        };
+        
+        ws.onclose = () => {
+            logWs(`[Disconnected] Socket closed.`, 'error');
+            ws = null;
+            currentStreamSpan = null;
+            document.getElementById('wsConnectBtn').innerText = "Connect WebSocket";
+            document.getElementById('wsConnectBtn').style.backgroundColor = "#1f6feb";
+            document.getElementById('wsControls').style.display = "none";
+        };
+        
+        ws.onerror = (error) => {
+            logWs(`[Error] WebSocket encountered an error. Is FastAPI running?`, 'error');
+        };
+    }
+
+    function sendWsMessage() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            logWs(`[Error] Not connected.`, 'error');
+            return;
+        }
+        const sessionId = document.getElementById('wsSessionId').value;
+        const content = document.getElementById('wsMessage').value;
+        
+        const payload = {
+            "user_id": "windows_tester",
+            "channel_id": sessionId,
+            "content": content
+        };
+        
+        logWs(`\n[You]: ${content}`, 'system');
+        ws.send(JSON.stringify(payload));
+    }
+</script>
+</body>
+</html>

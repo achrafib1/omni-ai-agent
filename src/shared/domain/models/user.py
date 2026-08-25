@@ -16,8 +16,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 # Inherit from the centralized Base to ensure Alembic detects this schema
-from shared.infrastructure.db.base import Base
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.infrastructure.db.base import Base
+from src.shared.infrastructure.observability.logger import get_logger
 
 # Initialize our elegant rich logger for this specific domain model
 logger = get_logger(__name__)
@@ -48,6 +48,8 @@ class User(Base):
     """
 
     __tablename__ = "users"
+
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True

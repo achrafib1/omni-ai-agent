@@ -10,8 +10,8 @@ workspace and project.
 
 import opik
 
-from shared.config import settings
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.config import settings
+from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
