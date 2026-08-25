@@ -14,7 +14,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
