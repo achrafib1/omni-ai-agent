@@ -14,7 +14,7 @@ from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Import our elegant rich logger
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -87,6 +87,12 @@ class Settings(BaseSettings):
         SecretStr(""),
         description="The custom verification token used for webhook handshakes.",
     )
+
+    # --- INTEGRATIONS (Discord) ---
+    DISCORD_BOT_TOKEN: SecretStr = Field(
+        SecretStr(""), description="Discord Bot Token for API integrations."
+    )
+
 
     # --- OBSERVABILITY (Opik) ---
     OPIK_API_KEY: SecretStr = Field(

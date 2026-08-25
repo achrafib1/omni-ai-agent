@@ -17,14 +17,14 @@ from sqlalchemy import DateTime, ForeignKey, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from shared.infrastructure.db.base import Base
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.infrastructure.db.base import Base
+from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
 # Prevent circular imports while satisfying Pylance/Mypy strict typing
 if TYPE_CHECKING:
-    from shared.domain.models.user import User
+    from src.shared.domain.models.user import User
 
 
 class Memory(Base):
@@ -39,12 +39,14 @@ class Memory(Base):
         id (uuid.UUID): Secure internal UUIDv4 primary key.
         user_id (uuid.UUID): Strict foreign key binding this fact to an owner.
         content (str): The textual extraction (e.g., "User loves techno music.").
-        embedding (list[float]): The 384-dimensional vector representation.
+        embedding (list[float]): The 768-dimensional vector representation (Gemini).
         created_at (datetime): Automatically generated creation timestamp.
         user (User): Back-reference to the User model.
     """
 
     __tablename__ = "agent_memories"
+
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
@@ -57,8 +59,8 @@ class Memory(Base):
 
     content: Mapped[str] = mapped_column(Text, nullable=False)
 
-    # Define vector column mapping to the all-MiniLM-L6-v2 dimensions (384)
-    embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
+    # Define vector column mapping to the Gemini text-embedding-004 dimensions (768)
+    embedding: Mapped[list[float]] = mapped_column(Vector(768), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

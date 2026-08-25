@@ -14,8 +14,8 @@ Only generic status indicators are emitted.
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from shared.config import settings
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.config import settings
+from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -11,9 +11,9 @@ from typing import AsyncGenerator
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.config import settings
-from shared.infrastructure.db.session import AsyncSessionLocal
-from shared.infrastructure.observability.logger import get_logger
+from src.shared.config import settings
+from src.shared.infrastructure.db.session import AsyncSessionLocal
+from src.shared.infrastructure.observability.logger import get_logger
 
 # Initialize logger for this module.
 logger = get_logger(__name__)
