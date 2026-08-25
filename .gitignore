@@ -37,9 +37,8 @@ venv.bak/
 # Environment Variables & Secrets
 # ==========================================
 .env
-.env.local
-.env.dev
-.env.prod
+.env.*
+!.env.example
 *.secret
 credentials.json
 
