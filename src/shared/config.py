@@ -93,7 +93,6 @@ class Settings(BaseSettings):
         SecretStr(""), description="Discord Bot Token for API integrations."
     )
 
-
     # --- OBSERVABILITY (Opik) ---
     OPIK_API_KEY: SecretStr = Field(
         SecretStr(""), description="Opik API key for agent tracing and evaluation."

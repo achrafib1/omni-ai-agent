@@ -2,37 +2,35 @@
 """
 FastMCP Server Entrypoint for Omni-AI-Agent.
 
-This module spins up an independent microservice exposing our RAG tools, 
+This module spins up an independent microservice exposing our RAG tools,
 system context, and Opik-managed prompts over the Model Context Protocol (MCP).
 It uses a highly scalable, modular registration pattern.
 """
 
+import os
 import sys
-from fastmcp import FastMCP
-import opik 
-import os 
 
-from src.shared.infrastructure.observability.logger import get_logger
-from src.shared.config import settings  # Import  settings configuration
+from fastmcp import FastMCP
 
 # Import the prompt synchronizers
 from src.app.mcp_server.prompts.prompt_sync import (
-    get_routing_system_prompt, 
-    get_omni_character_card
+    get_omni_character_card,
+    get_routing_system_prompt,
 )
 
 # Import our specialized tools
-from src.app.mcp_server.tools.memory_rag import store_user_memory, retrieve_user_memories
+from src.app.mcp_server.tools.memory_rag import retrieve_user_memories, store_user_memory
 from src.app.mcp_server.tools.system_tools import get_current_system_activity
+from src.shared.config import settings  # Import  settings configuration
+from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger("mcp_server")
 
 # ============================================================================
 # FASTMCP SERVER INITIALIZATION
 # ============================================================================
-mcp = FastMCP(
-    name="OmniAgent-MCP-Engine"
-)
+mcp = FastMCP(name="OmniAgent-MCP-Engine")
+
 
 def register_prompts(mcp_instance: FastMCP) -> None:
     """
@@ -46,6 +44,7 @@ def register_prompts(mcp_instance: FastMCP) -> None:
     except Exception as e:
         logger.error(f"[danger]Failed to register prompts:[/danger] {e}", exc_info=True)
         raise
+
 
 def register_tools(mcp_instance: FastMCP) -> None:
     """
@@ -61,6 +60,7 @@ def register_tools(mcp_instance: FastMCP) -> None:
         logger.error(f"[danger]Failed to register tools:[/danger] {e}", exc_info=True)
         raise
 
+
 # ============================================================================
 # SERVER BOOTSTRAP
 # ============================================================================
@@ -68,7 +68,7 @@ def bootstrap_server() -> None:
     """Bootstraps the MCP server by registering all components safely."""
     try:
         logger.info("Initializing OmniAgent FastMCP Components...")
-        
+
         os.environ["OPIK_API_KEY"] = settings.OPIK_API_KEY.get_secret_value()
         os.environ["OPIK_WORKSPACE"] = settings.OPIK_WORKSPACE
         os.environ["OPIK_PROJECT_NAME"] = settings.OPIK_PROJECT_NAME
@@ -87,6 +87,7 @@ def bootstrap_server() -> None:
     except Exception as e:
         logger.error(f"[danger]Critical failure during MCP bootstrap:[/danger] {e}", exc_info=True)
         sys.exit(1)
+
 
 # Execute bootstrap immediately upon module load
 bootstrap_server()

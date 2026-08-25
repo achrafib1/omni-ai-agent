@@ -5,8 +5,7 @@ Combines all individual resource routers into a single v1 instance.
 """
 
 from fastapi import APIRouter
-
-from src.app.gateway.v1.routers import whatsapp, discord
+from src.app.gateway.v1.routers import discord, whatsapp
 
 api_v1_router = APIRouter()
 

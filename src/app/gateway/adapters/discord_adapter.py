@@ -2,22 +2,24 @@
 """
 Discord REST API Adapter for Omni-AI-Agent.
 
-Abstracts all direct interactions with the Discord API. It parses incoming 
-Discord webhooks and WebSocket payloads into the strict `OmniMessage` schema, 
+Abstracts all direct interactions with the Discord API. It parses incoming
+Discord webhooks and WebSocket payloads into the strict `OmniMessage` schema,
 and provides asynchronous HTTP methods for dispatching the agent's outgoing responses.
 """
 
-import httpx
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
-from src.shared.config import settings
-from src.shared.domain.schemas.message import OmniMessage, PlatformType, MessageType
+import httpx
+
 from src.app.gateway.adapters.base import BaseChannelAdapter
+from src.shared.config import settings
+from src.shared.domain.schemas.message import MessageType, OmniMessage, PlatformType
 from src.shared.infrastructure.observability.logger import get_logger
 
 logger = get_logger(__name__)
 
 DISCORD_API_BASE = "https://discord.com/api/v10"
+
 
 class DiscordAdapter(BaseChannelAdapter):
     """Adapter for handling Discord platform ingress and egress."""
@@ -41,7 +43,7 @@ class DiscordAdapter(BaseChannelAdapter):
             author = payload.get("author", {})
             if author.get("bot", False):
                 return None
-                
+
             content = payload.get("content", "").strip()
             if not content:
                 logger.debug("Received empty Discord message. Skipping processing.")
@@ -49,19 +51,23 @@ class DiscordAdapter(BaseChannelAdapter):
 
             user_id = str(author.get("id"))
             channel_id = str(payload.get("channel_id"))
-            
-            logger.info(f"Incoming Discord HTTP message from User ID: {user_id} in Channel: {channel_id}.")
+
+            logger.info(
+                f"Incoming Discord HTTP message from User ID: {user_id} in Channel: {channel_id}."
+            )
 
             return OmniMessage(
                 platform=PlatformType.DISCORD,
                 platform_user_id=user_id,
                 session_id=channel_id,
                 message_type=MessageType.TEXT,
-                content=content
+                content=content,
             )
 
         except Exception as e:
-            logger.error(f"[danger]Failed to parse Discord HTTP payload:[/danger] {e}", exc_info=True)
+            logger.error(
+                f"[danger]Failed to parse Discord HTTP payload:[/danger] {e}", exc_info=True
+            )
             return None
 
     async def parse_ws_payload(self, payload: Dict[str, Any]) -> Optional[OmniMessage]:
@@ -80,7 +86,7 @@ class DiscordAdapter(BaseChannelAdapter):
                 platform_user_id=user_id,
                 session_id=channel_id,
                 message_type=MessageType.TEXT,
-                content=content
+                content=content,
             )
         except Exception as e:
             logger.error(f"[danger]Failed to parse Discord WS payload:[/danger] {e}", exc_info=True)
@@ -90,18 +96,24 @@ class DiscordAdapter(BaseChannelAdapter):
         """Sends a complete text message back to a Discord channel."""
         logger.debug(f"Dispatching text message to Discord channel {recipient_id}.")
         url = f"{DISCORD_API_BASE}/channels/{recipient_id}/messages"
-        
+
         payload = {"content": text}
-        
+
         async with httpx.AsyncClient() as client:
             try:
                 res = await client.post(url, headers=self.headers, json=payload)
                 res.raise_for_status()
-                logger.info(f"[success]Message successfully delivered to Discord channel {recipient_id}.[/success]")
+                logger.info(
+                    f"[success]Message successfully delivered to Discord channel {recipient_id}.[/success]"
+                )
                 return True
             except httpx.HTTPStatusError as e:
-                logger.error(f"[danger]Failed to send Discord message:[/danger] HTTP {e.response.status_code} - {e.response.text}")
+                logger.error(
+                    f"[danger]Failed to send Discord message:[/danger] HTTP {e.response.status_code} - {e.response.text}"
+                )
                 return False
             except Exception as e:
-                logger.error(f"[danger]Unexpected error sending Discord message:[/danger] {e}", exc_info=True)
+                logger.error(
+                    f"[danger]Unexpected error sending Discord message:[/danger] {e}", exc_info=True
+                )
                 return False

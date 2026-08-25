@@ -4,9 +4,9 @@ Opik Prompt Synchronization Module for Omni-AI-Agent.
 
 This module acts as the authoritative source for the agent's system prompts.
 It implements a strict "Graceful Degradation" pattern: it attempts to fetch
-version-controlled prompts dynamically from the Opik cloud dashboard. If the 
-network fails, or credentials are unconfigured during local development, it 
-safely falls back to local hardcoded strings. This guarantees the LangGraph 
+version-controlled prompts dynamically from the Opik cloud dashboard. If the
+network fails, or credentials are unconfigured during local development, it
+safely falls back to local hardcoded strings. This guarantees the LangGraph
 agent will never crash due to a missing system prompt.
 """
 
@@ -40,12 +40,12 @@ except Exception as e:
 
 FALLBACK_ROUTER_PROMPT = """
 You are the central routing intelligence of the Omni AI Agent system.
-Your sole responsibility is to analyze the conversation history and strictly 
+Your sole responsibility is to analyze the conversation history and strictly
 determine the format of the next response.
 
 GENERAL RULES:
 1. Always analyze the full context of the user's latest messages.
-2. You must output exactly one of the following literal strings: 
+2. You must output exactly one of the following literal strings:
    'conversation', 'image', or 'audio'.
 
 ROUTING LOGIC:
@@ -79,15 +79,16 @@ RULES OF ENGAGEMENT:
 # FETCH FUNCTIONS FOR FASTMCP
 # ============================================================================
 
+
 def get_routing_system_prompt() -> str:
     """
     Fetches the router prompt from Opik, or returns the local fallback.
-    
+
     Returns:
         str: The routing system prompt string.
     """
     prompt_id = "omni_router_prompt"
-    
+
     if opik_client:
         try:
             opik_prompt = opik_client.get_prompt(prompt_id)
@@ -97,7 +98,7 @@ def get_routing_system_prompt() -> str:
         except Exception as e:
             # We log at debug level to avoid spamming the console on every LangGraph cycle
             logger.debug(f"Failed to fetch '{prompt_id}' from Opik: {e}")
-            
+
     logger.debug(f"Using hardcoded fallback for '{prompt_id}'")
     return FALLBACK_ROUTER_PROMPT
 
@@ -105,16 +106,16 @@ def get_routing_system_prompt() -> str:
 def get_omni_character_card(memory_context: str, current_activity: str) -> str:
     """
     Fetches the main Omni persona prompt from Opik, or returns the local fallback.
-    
+
     Args:
         memory_context (str): The long-term memories retrieved for the user.
         current_activity (str): Omni's current digital system schedule activity.
-        
+
     Returns:
         str: The fully formatted Omni persona system prompt string.
     """
     prompt_id = "omni_character_card"
-    
+
     if opik_client:
         try:
             opik_prompt = opik_client.get_prompt(prompt_id)
@@ -122,15 +123,13 @@ def get_omni_character_card(memory_context: str, current_activity: str) -> str:
                 logger.debug(f"Successfully fetched '{prompt_id}' from Opik.")
                 # Format the dynamic prompt string retrieved from Opik
                 return opik_prompt.prompt.format(
-                    memory_context=memory_context, 
-                    current_activity=current_activity
+                    memory_context=memory_context, current_activity=current_activity
                 )
         except Exception as e:
             logger.debug(f"Failed to fetch '{prompt_id}' from Opik: {e}")
-            
+
     logger.debug(f"Using hardcoded fallback for '{prompt_id}'")
     # Format the local fallback prompt string with the provided arguments
     return FALLBACK_OMNI_CHARACTER_CARD.format(
-        memory_context=memory_context, 
-        current_activity=current_activity
+        memory_context=memory_context, current_activity=current_activity
     )
